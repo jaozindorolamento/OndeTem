@@ -1,0 +1,23 @@
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import { optionalAuth } from './middleware/auth.js';
+import { notFound, errorHandler } from './middleware/error.js';
+import auth from './routes/auth.js';
+import catalog from './routes/catalog.js';
+
+export const app=express();
+app.disable('x-powered-by');
+app.use(helmet());
+app.use(cors({origin:process.env.FRONTEND_URL||'http://localhost:5173',credentials:true}));
+app.use(express.json({limit:'200kb'}));
+app.use(cookieParser());
+app.use(rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:true,legacyHeaders:false}));
+app.use(optionalAuth);
+app.get('/api/health',(_req,res)=>res.json({status:'ok',service:'ondetem-api',time:new Date().toISOString()}));
+app.use('/api/auth',auth);
+app.use('/api',catalog);
+app.use(notFound);
+app.use(errorHandler);
